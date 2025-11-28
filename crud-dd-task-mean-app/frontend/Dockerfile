@@ -1,19 +1,16 @@
-FROM node:18-alpine AS build
+# Stage 1: Build Angular app
+FROM node:18 AS build
 WORKDIR /app
 
 COPY package*.json ./
 RUN npm install
 
 COPY . .
-RUN npm run build  --omit=dev
+RUN npm run build --prod
 
-# Auto-detect Angular dist folder name
-RUN DIST_DIR=$(ls dist) && \
-    echo "Detected dist folder: $DIST_DIR" && \
-    mkdir -p /output && \
-    cp -r dist/$DIST_DIR/* /output/
-
-FROM nginx:stable-alpine
-COPY --from=build /output/ /usr/share/nginx/html/
+# Stage 2: Run using Nginx
+FROM nginx:alpine
+COPY --from=build /app/dist/dd-task-mean-app /usr/share/nginx/html
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
+
